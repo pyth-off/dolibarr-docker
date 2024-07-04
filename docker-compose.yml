@@ -1,0 +1,46 @@
+version: '2'
+services:
+  dolibarr-db:
+    image: pythoff/dolibarr-db:latest
+    container_name: dolibarr-db
+    hostname: dolibarr-db
+    environment:
+      - COMPOSE_HTTP_TIMEOUT=120
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=dolibarr
+    ports:
+      - "13306:3306"
+    external_links:
+      - dolibarr-web
+    volumes:
+      - ./var/lib/mysql:/var/lib/mysql
+  dolibarr-web:
+    image: pythoff/dolibarr-web:latest
+    container_name: dolibarr-web
+    hostname: dolibarr-web
+    depends_on:
+      - dolibarr-db
+    external_links:
+      - dolibarr-db
+    volumes:
+      # mount code
+      - ./htdocs:/var/www/html/
+      # apache config
+      - ./etc/develop/apache2/000-default.conf:/etc/apache2/sites-enabled/000-default.conf
+      # php config
+      - ./etc/develop/php/custom.ini:/usr/local/etc/php/conf.d/99-custom.ini
+      - ./var/log:/var/www/html/log
+    ports:
+      - "2222:22"
+      - "88:80"
+    environment:
+      - SSH_ROOT_PASSWORD=root
+      - APPLICATION_ENV=${APPLICATION_ENV}
+      - XDEBUG_REMOTE_HOST=${XDEBUG_REMOTE_HOST}
+      - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
+      - XDEBUG_CONFIG=${XDEBUG_CONFIG}
+      - VIRTUAL_HOST=dolibarr.local
+networks:
+  default:
+      name: dolibarr
+      external: true
